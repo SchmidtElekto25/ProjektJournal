@@ -10,13 +10,13 @@
   :root {
     --bg: #F2F2F7;
     --card: #FFFFFF;
-    --blue: #007AFF;
+    --blue: #D94F1E;
     --green: #34C759;
     --orange: #FF9500;
     --red: #FF3B30;
     --purple: #AF52DE;
     --yellow: #FFCC00;
-    --text1: #1C1C1E;
+    --text1: #2C3035;
     --text2: #6C6C70;
     --text3: #AEAEB2;
     --border: #E5E5EA;
@@ -27,7 +27,7 @@
   .hidden { display: none !important; }
 
   /* Layout */
-  .view { display: none; min-height: 100vh; padding-bottom: 80px; }
+  .view { display: none; min-height: 100vh; padding-bottom: calc(80px + max(env(safe-area-inset-bottom), 8px)); }
   .view.active { display: block; }
   
   /* Header */
@@ -38,11 +38,11 @@
   .header-action { color: var(--blue); font-size: 17px; background: none; border: none; cursor: pointer; font-weight: 600; }
 
   /* Bottom Nav */
-  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; padding-bottom: max(env(safe-area-inset-bottom), 8px); z-index: 100; }
   .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 4px; cursor: pointer; border: none; background: none; }
   .nav-icon { font-size: 24px; }
   .nav-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
-  .nav-item.active .nav-label { color: var(--blue); }
+  .nav-item.active .nav-label { color: #D94F1E; }
   .nav-item.active .nav-icon { filter: none; }
 
   /* Cards */
@@ -51,7 +51,7 @@
 
   /* Buttons */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; padding: 14px 20px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; width: 100%; margin-bottom: 10px; }
-  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue { background: #D94F1E; color: #fff; }
   .btn-green { background: var(--green); color: #fff; }
   .btn-ghost { background: var(--card); color: var(--blue); border: 1.5px solid var(--border2); }
   .btn-red { background: var(--red); color: #fff; }
@@ -68,7 +68,7 @@
   /* Status badges */
   .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .badge-geplant { background: #FFF3CD; color: #856404; }
-  .badge-aktiv { background: #D1FAE5; color: #065F46; }
+  .badge-aktiv { background: #FDE8DF; color: #B03A10; }
   .badge-abgeschlossen { background: #E5E7EB; color: #374151; }
   .badge-storniert { background: #FEE2E2; color: #991B1B; }
 
@@ -133,7 +133,7 @@
 
   /* Loading */
   .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 500; gap: 16px; }
-  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: #D94F1E; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-text { color: var(--text2); font-size: 15px; }
 
@@ -166,8 +166,17 @@
 
 <!-- ── View: Kunden ── -->
 <div class="view active" id="view-kunden">
-  <div class="header">
-    <h1>Kunden</h1>
+  <div class="header" style="padding:10px 20px">
+    <div style="display:flex;align-items:center;gap:10px;flex:1">
+      <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="16" fill="#D94F1E"/>
+        <text x="50" y="68" text-anchor="middle" font-family="-apple-system,sans-serif" font-weight="700" font-size="56" fill="white">SE</text>
+      </svg>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#2C3035;line-height:1.2">Schmidt Elektrotechnik</div>
+        <div style="font-size:11px;color:#6C6C70">Meisterbetrieb · ProjektJournal</div>
+      </div>
+    </div>
     <button class="header-action" onclick="openModal('modal-neuer-kunde')">+ Neu</button>
   </div>
   <div class="card-list" id="kunden-list"></div>
