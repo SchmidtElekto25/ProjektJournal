@@ -27,7 +27,7 @@
   .hidden { display: none !important; }
 
   /* Layout */
-  .view { display: none; min-height: 100vh; padding-bottom: calc(80px + max(env(safe-area-inset-bottom), 8px)); }
+  .view { display: none; position: fixed; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + max(env(safe-area-inset-bottom), 8px)); }
   .view.active { display: block; }
   
   /* Header */
@@ -179,6 +179,11 @@
     </div>
     <button class="header-action" onclick="openModal('modal-neuer-kunde')">+ Neu</button>
   </div>
+  <div style="padding:12px 16px 0">
+    <button class="btn btn-blue" onclick="openFreieNotiz()" style="margin-bottom:0">
+      🎙 Freie Sprachnotiz – KI ordnet automatisch zu
+    </button>
+  </div>
   <div class="card-list" id="kunden-list"></div>
   <div class="bottom-nav">
     <button class="nav-item active" onclick="showView('kunden')" id="nav-kunden">
@@ -318,16 +323,24 @@
 <!-- ── Modal: Notiz ── -->
 <div class="modal hidden" id="modal-notiz">
   <div class="modal-inner">
-    <div class="modal-title">Notiz hinzufügen</div>
-    <div class="record-area" id="record-area">
-      <button class="rec-btn rec-btn-idle" id="rec-btn" onclick="toggleRecording()">🎙</button>
-      <div class="rec-timer hidden" id="rec-timer">0:00</div>
-      <div class="rec-status" id="rec-status">Aufnahme starten</div>
+    <div class="modal-title" id="notiz-modal-title">Notiz hinzufügen</div>
+    <!-- Voice recording state -->
+    <div id="notiz-state-voice">
+      <div class="record-area" id="record-area">
+        <button class="rec-btn rec-btn-idle" id="rec-btn" onclick="toggleRecording()">🎙</button>
+        <div class="rec-timer hidden" id="rec-timer">0:00</div>
+        <div class="rec-status" id="rec-status">Tippen zum Starten</div>
+      </div>
+      <div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:12px">– oder Text eingeben –</div>
+      <div class="input-group"><textarea class="input" id="notiz-text" placeholder="Notiz eintippen…" style="min-height:80px"></textarea></div>
+      <button class="btn btn-blue" onclick="saveNotizText()">✓ Speichern & analysieren</button>
+      <button class="btn btn-ghost" onclick="closeNotizModal()">Abbrechen</button>
     </div>
-    <div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:12px">– oder Text eingeben –</div>
-    <div class="input-group"><textarea class="input" id="notiz-text" placeholder="Notiz eintippen…" style="min-height:100px"></textarea></div>
-    <button class="btn btn-blue" onclick="saveNotiz()">Speichern & analysieren</button>
-    <button class="btn btn-ghost" onclick="closeModal('modal-notiz')">Abbrechen</button>
+    <!-- Processing state -->
+    <div id="notiz-state-processing" class="hidden" style="text-align:center;padding:32px 0">
+      <div class="spinner" style="margin:0 auto 16px"></div>
+      <div id="notiz-processing-text" style="color:var(--text2);font-size:15px">Wird verarbeitet…</div>
+    </div>
   </div>
 </div>
 
@@ -345,6 +358,34 @@
     </div>
     <button class="btn btn-blue" onclick="saveAufmass()">Speichern</button>
     <button class="btn btn-ghost" onclick="closeModal('modal-aufmass')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ── Modal: Freie Notiz ── -->
+<div class="modal hidden" id="modal-freie-notiz">
+  <div class="modal-inner">
+    <div class="modal-title">Freie Sprachnotiz</div>
+    <p style="color:var(--text2);font-size:14px;text-align:center;margin-bottom:16px">Einfach drauflosreden – KI erkennt Kunde, Projekt und alle Details automatisch</p>
+    <div id="freie-state-voice">
+      <div class="record-area">
+        <button class="rec-btn rec-btn-idle" id="freie-rec-btn" onclick="toggleFreieRecording()">🎙</button>
+        <div class="rec-timer hidden" id="freie-rec-timer">0:00</div>
+        <div class="rec-status" id="freie-rec-status">Tippen zum Starten</div>
+      </div>
+      <div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:12px">– oder Text eingeben –</div>
+      <textarea class="input" id="freie-notiz-text" placeholder="z.B. ‚Beim Müller in der Küche hab ich heute die Unterverteilung gesetzt, 3 Stunden, es fehlt noch der FI…'" style="min-height:100px;margin-bottom:12px"></textarea>
+      <button class="btn btn-blue" onclick="saveFreieNotizText()">✓ Analysieren & zuordnen</button>
+      <button class="btn btn-ghost" onclick="closeFreieNotiz()">Abbrechen</button>
+    </div>
+    <div id="freie-state-processing" class="hidden" style="text-align:center;padding:32px 0">
+      <div class="spinner" style="margin:0 auto 16px"></div>
+      <div id="freie-processing-text" style="color:var(--text2);font-size:15px">KI analysiert…</div>
+    </div>
+    <div id="freie-state-result" class="hidden">
+      <div id="freie-result-content"></div>
+      <button class="btn btn-blue" onclick="confirmFreieNotiz()">✓ Bestätigen & speichern</button>
+      <button class="btn btn-ghost" onclick="closeFreieNotiz()">Verwerfen</button>
+    </div>
   </div>
 </div>
 
@@ -734,97 +775,293 @@ async function deleteAufmass(aid){
   }catch(err){toast('Fehler: '+err.message);}
 }
 
-// ── Recording ─────────────────────────────────────────────────────────────
-async function toggleRecording(){
-  if(isRecording){stopRecording();}
-  else{await startRecording();}
-}
+// ── Recording helpers ────────────────────────────────────────────────────
+let freieRecording=false;
+let freieRecSeconds=0;
+let freieRecTimer=null;
+let freieAudioChunks=[];
+let freieMediaRecorder=null;
+let freieResult=null;
 
-async function startRecording(){
+async function startRecordingGeneric(btnId,timerId,statusId,onStop){
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     const mimes=['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg'];
     audioMime='';
     for(const m of mimes){if(MediaRecorder.isTypeSupported(m)){audioMime=m;break;}}
-    if(!audioMime){toast('Aufnahme nicht unterstützt');return;}
+    if(!audioMime){toast('Aufnahme nicht unterstützt');return null;}
     audioChunks=[];
     mediaRecorder=new MediaRecorder(stream,{mimeType:audioMime});
     mediaRecorder.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data);};
     mediaRecorder.onstop=async()=>{
       stream.getTracks().forEach(t=>t.stop());
       const blob=new Blob(audioChunks,{type:audioMime});
-      if(blob.size<1000){toast('Aufnahme zu kurz');resetRecording();return;}
-      await transcribeAudio(blob);
+      if(blob.size<500){toast('Aufnahme zu kurz');return;}
+      await onStop(blob,audioMime);
     };
     mediaRecorder.start(250);
     isRecording=true;recSeconds=0;
-    document.getElementById('rec-btn').className='rec-btn rec-btn-recording';
-    document.getElementById('rec-btn').textContent='⏹';
-    document.getElementById('rec-timer').classList.remove('hidden');
-    document.getElementById('rec-status').textContent='Aufnahme läuft… Stoppen zum Beenden';
+    const btn=document.getElementById(btnId);
+    if(btn){btn.className='rec-btn rec-btn-recording';btn.textContent='⏹';}
+    const timer=document.getElementById(timerId);
+    if(timer)timer.classList.remove('hidden');
+    const status=document.getElementById(statusId);
+    if(status)status.textContent='Aufnahme läuft… Tippen zum Stoppen';
     recTimer=setInterval(()=>{
       recSeconds++;
       const m=Math.floor(recSeconds/60);const s=recSeconds%60;
-      document.getElementById('rec-timer').textContent=`${m}:${String(s).padStart(2,'0')}`;
-      if(recSeconds>=120)stopRecording();
+      const t=document.getElementById(timerId);
+      if(t)t.textContent=`${m}:${String(s).padStart(2,'0')}`;
+      if(recSeconds>=120){clearInterval(recTimer);if(mediaRecorder&&mediaRecorder.state!=='inactive'){setTimeout(()=>mediaRecorder.stop(),300);}}
     },1000);
   }catch(err){toast('Mikrofon-Fehler: '+err.message);}
 }
 
-function stopRecording(){
+function stopRecordingGeneric(btnId,timerId,statusId){
   clearInterval(recTimer);
   isRecording=false;
+  const btn=document.getElementById(btnId);
+  if(btn){btn.className='rec-btn rec-btn-idle';btn.textContent='🎙';}
+  const timer=document.getElementById(timerId);
+  if(timer)timer.classList.add('hidden');
   if(mediaRecorder&&mediaRecorder.state!=='inactive'){
     setTimeout(()=>mediaRecorder.stop(),300);
   }
 }
 
-function resetRecording(){
-  clearInterval(recTimer);isRecording=false;
-  document.getElementById('rec-btn').className='rec-btn rec-btn-idle';
-  document.getElementById('rec-btn').textContent='🎙';
-  document.getElementById('rec-timer').classList.add('hidden');
-  document.getElementById('rec-status').textContent='Aufnahme starten';
+async function b64fromBlob(blob){
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(blob);});
 }
 
-async function transcribeAudio(blob){
-  document.getElementById('rec-status').textContent='Wird transkribiert…';
-  try{
-    const b64=await new Promise((res,rej)=>{
-      const r=new FileReader();
-      r.onload=()=>res(r.result.split(',')[1]);
-      r.onerror=rej;r.readAsDataURL(blob);
+async function whisperTranscribe(blob,mime){
+  const b64=await b64fromBlob(blob);
+  const response=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({whisper:true,audio:b64,mime})});
+  if(!response.ok)throw new Error('Transkription fehlgeschlagen');
+  const data=await response.json();
+  return(data.text||'').trim();
+}
+
+// ── Notiz Modal (Projekt-Kontext) ─────────────────────────────────────────
+function closeNotizModal(){
+  closeModal('modal-notiz');
+  document.getElementById('notiz-text').value='';
+  document.getElementById('notiz-state-voice').classList.remove('hidden');
+  document.getElementById('notiz-state-processing').classList.add('hidden');
+  clearInterval(recTimer);isRecording=false;
+}
+
+async function toggleRecording(){
+  if(isRecording){
+    stopRecordingGeneric('rec-btn','rec-timer','rec-status');
+  }else{
+    await startRecordingGeneric('rec-btn','rec-timer','rec-status',async(blob,mime)=>{
+      // Direct process - no text field
+      document.getElementById('notiz-state-voice').classList.add('hidden');
+      document.getElementById('notiz-state-processing').classList.remove('hidden');
+      document.getElementById('notiz-processing-text').textContent='Wird transkribiert…';
+      try{
+        const text=await whisperTranscribe(blob,mime);
+        if(!text){toast('Keine Sprache erkannt');closeNotizModal();return;}
+        document.getElementById('notiz-processing-text').textContent='KI analysiert…';
+        await processNotiz(text);
+        closeNotizModal();
+        toast('Notiz gespeichert ✓');
+      }catch(err){
+        toast('Fehler: '+err.message);
+        closeNotizModal();
+      }
     });
-    const mime=audioMime;
-    const response=await fetch(AI_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({whisper:true,audio:b64,mime})
-    });
-    if(!response.ok)throw new Error('Transkription fehlgeschlagen');
-    const data=await response.json();
-    const text=(data.text||'').trim();
-    if(!text){toast('Keine Sprache erkannt');resetRecording();return;}
-    document.getElementById('notiz-text').value=text;
-    resetRecording();
-    toast('Transkribiert ✓');
-  }catch(err){
-    toast('Fehler: '+err.message);resetRecording();
   }
 }
 
-// ── Notiz speichern ───────────────────────────────────────────────────────
-async function saveNotiz(){
+async function saveNotizText(){
   const text=document.getElementById('notiz-text').value.trim();
-  if(!text){toast('Bitte Text eingeben oder Sprachnotiz machen');return;}
+  if(!text){toast('Bitte Text eingeben');return;}
   if(!aktiveProjekt){toast('Kein Projekt ausgewählt');return;}
-  closeModal('modal-notiz');
-  showLoading('KI analysiert…');
+  document.getElementById('notiz-state-voice').classList.add('hidden');
+  document.getElementById('notiz-state-processing').classList.remove('hidden');
+  document.getElementById('notiz-processing-text').textContent='KI analysiert…';
   try{
     await processNotiz(text);
-  }finally{
-    hideLoading();
-    document.getElementById('notiz-text').value='';
+    closeNotizModal();
+    toast('Notiz gespeichert ✓');
+  }catch(err){
+    toast('Fehler: '+err.message);
+    closeNotizModal();
+  }
+}
+
+// ── Freie Notiz ───────────────────────────────────────────────────────────
+function openFreieNotiz(){
+  document.getElementById('freie-state-voice').classList.remove('hidden');
+  document.getElementById('freie-state-processing').classList.add('hidden');
+  document.getElementById('freie-state-result').classList.add('hidden');
+  document.getElementById('freie-notiz-text').value='';
+  openModal('modal-freie-notiz');
+}
+
+function closeFreieNotiz(){
+  closeModal('modal-freie-notiz');
+  clearInterval(recTimer);isRecording=false;
+  freieResult=null;
+}
+
+async function toggleFreieRecording(){
+  if(isRecording){
+    stopRecordingGeneric('freie-rec-btn','freie-rec-timer','freie-rec-status');
+  }else{
+    await startRecordingGeneric('freie-rec-btn','freie-rec-timer','freie-rec-status',async(blob,mime)=>{
+      document.getElementById('freie-state-voice').classList.add('hidden');
+      document.getElementById('freie-state-processing').classList.remove('hidden');
+      document.getElementById('freie-processing-text').textContent='Wird transkribiert…';
+      try{
+        const text=await whisperTranscribe(blob,mime);
+        if(!text){toast('Keine Sprache erkannt');closeFreieNotiz();return;}
+        document.getElementById('freie-processing-text').textContent='KI analysiert und ordnet zu…';
+        await analyzeFreieNotiz(text);
+      }catch(err){
+        toast('Fehler: '+err.message);closeFreieNotiz();
+      }
+    });
+  }
+}
+
+async function saveFreieNotizText(){
+  const text=document.getElementById('freie-notiz-text').value.trim();
+  if(!text){toast('Bitte Text eingeben');return;}
+  document.getElementById('freie-state-voice').classList.add('hidden');
+  document.getElementById('freie-state-processing').classList.remove('hidden');
+  document.getElementById('freie-processing-text').textContent='KI analysiert und ordnet zu…';
+  try{
+    await analyzeFreieNotiz(text);
+  }catch(err){
+    toast('Fehler: '+err.message);closeFreieNotiz();
+  }
+}
+
+async function analyzeFreieNotiz(inputText){
+  const kundenCtx=DB.kunden.map(k=>{
+    const projs=DB.projekte.filter(p=>p.customer_id===k.id).map(p=>'  - '+p.name+' ('+p.status+')').join('\n');
+    return'Kunde: '+k.name+' | ID: '+k.id+'\n'+(projs||'  (keine Projekte)');
+  }).join('\n\n');
+
+  const systemPrompt=`Du bist der Assistent von Jonas Schmidt Elektrotechnik. Er hat gerade eine freie Sprachnotiz gemacht. 
+
+Bekannte Kunden und Projekte:
+${kundenCtx||'(noch keine)'}
+
+Analysiere die Notiz und bestimme:
+1. Zu welchem Kunden und Projekt gehört das? (anhand des Namens/Kontexts)
+2. Falls kein passender Kunde existiert → neuen Kunden anlegen
+3. Falls kein passendes Projekt existiert → neues Projekt anlegen
+4. Was sind die wichtigen Infos (Todos, Material, Kundenwünsche, Hinweise)?
+
+Antworte NUR mit JSON:
+{
+  "kunde": {"id": "existierende-id-oder-null", "name": "Kundenname", "isNew": true/false},
+  "projekt": {"id": "existierende-id-oder-null", "name": "Projektname", "isNew": true/false},
+  "summary": "Kurze Zusammenfassung",
+  "fullText": "vollständiger Text",
+  "dashboard": {
+    "todos": [],
+    "materials": [],
+    "customerWishes": [],
+    "importantNotes": []
+  },
+  "confidence": "hoch/mittel/niedrig",
+  "confirmMessage": "Kurze Bestätigung für den Nutzer was die KI zugeordnet hat"
+}`;
+
+  const res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:systemPrompt,messages:[{role:'user',content:inputText}]})});
+  if(!res.ok)throw new Error('KI-Fehler');
+  const data=await res.json();
+  const raw=data.content?.[0]?.text||'';
+  let structured;
+  try{
+    const clean=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    const s=clean.indexOf('{');const e=clean.lastIndexOf('}');
+    structured=JSON.parse(clean.slice(s,e+1));
+  }catch{throw new Error('KI-Antwort konnte nicht verarbeitet werden');}
+
+  freieResult=structured;
+  freieResult._inputText=inputText;
+
+  // Show result for confirmation
+  document.getElementById('freie-state-processing').classList.add('hidden');
+  document.getElementById('freie-state-result').classList.remove('hidden');
+  
+  const conf=structured.confidence==='hoch'?'🟢':structured.confidence==='mittel'?'🟡':'🔴';
+  document.getElementById('freie-result-content').innerHTML=`
+    <div class="card" style="margin-bottom:12px;border-left:4px solid var(--blue)">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">KI hat erkannt:</div>
+      <div style="font-weight:600;margin-bottom:4px">👤 ${esc(structured.kunde?.name||'?')}${structured.kunde?.isNew?' <span style="color:var(--green);font-size:12px">NEU</span>':''}</div>
+      <div style="font-weight:600;margin-bottom:8px">🏗 ${esc(structured.projekt?.name||'?')}${structured.projekt?.isNew?' <span style="color:var(--green);font-size:12px">NEU</span>':''}</div>
+      <div style="font-size:14px;color:var(--text2)">${esc(structured.summary||'')}</div>
+      ${structured.confirmMessage?`<div style="font-size:13px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">${esc(structured.confirmMessage)}</div>`:''}
+    </div>`;
+}
+
+async function confirmFreieNotiz(){
+  if(!freieResult)return;
+  document.getElementById('freie-state-result').classList.add('hidden');
+  document.getElementById('freie-state-processing').classList.remove('hidden');
+  document.getElementById('freie-processing-text').textContent='Wird gespeichert…';
+  try{
+    // Get or create kunde
+    let kunde=freieResult.kunde?.id?DB.kunden.find(k=>k.id===freieResult.kunde.id):null;
+    if(!kunde&&freieResult.kunde?.name){
+      const newKunde={id:genId(),name:freieResult.kunde.name,phone:'',address:'',notes:'',created_at:new Date().toISOString()};
+      await sbFetch('customers',{method:'POST',body:JSON.stringify(newKunde)});
+      DB.kunden.push(newKunde);DB.kunden.sort((a,b)=>a.name.localeCompare(b.name));
+      kunde=newKunde;
+    }
+    if(!kunde){toast('Kein Kunde ermittelt');closeFreieNotiz();return;}
+
+    // Get or create projekt
+    let projekt=freieResult.projekt?.id?DB.projekte.find(p=>p.id===freieResult.projekt.id):null;
+    if(!projekt&&freieResult.projekt?.name){
+      const newProjekt={id:genId(),customer_id:kunde.id,name:freieResult.projekt.name,status:'aktiv',description:'',notes:'',dashboard:null,created_at:new Date().toISOString()};
+      await sbFetch('projects',{method:'POST',body:JSON.stringify(newProjekt)});
+      DB.projekte.unshift(newProjekt);
+      projekt=newProjekt;
+    }
+    if(!projekt){toast('Kein Projekt ermittelt');closeFreieNotiz();return;}
+
+    // Save entry + dashboard
+    const curDash=projekt.dashboard||{todos:[],materials:[],customerWishes:[],importantNotes:[]};
+    const d=freieResult.dashboard||{};
+    const newDash={
+      todos:Array.isArray(d.todos)?d.todos:curDash.todos,
+      materials:Array.isArray(d.materials)?d.materials:curDash.materials,
+      customerWishes:Array.isArray(d.customerWishes)?d.customerWishes:curDash.customerWishes,
+      importantNotes:Array.isArray(d.importantNotes)?d.importantNotes:curDash.importantNotes
+    };
+    const entry={id:genId(),project_id:projekt.id,date:todayStr(),summary:freieResult.summary||freieResult._inputText.slice(0,120),full_text:freieResult.fullText||freieResult._inputText,photos:[],created_at:new Date().toISOString()};
+    await sbFetch('entries',{method:'POST',body:JSON.stringify(entry)});
+    await sbFetch(`projects?id=eq.${projekt.id}`,{method:'PATCH',headers:{'Prefer':''},body:JSON.stringify({dashboard:newDash})});
+
+    DB.entries.unshift(entry);
+    DB.projekte=DB.projekte.map(p=>p.id===projekt.id?{...p,dashboard:newDash}:p);
+    
+    closeFreieNotiz();
+    renderKunden();
+    renderDashboard();
+    toast('Gespeichert ✓ → '+projekt.name);
+
+    // Navigate to project
+    setTimeout(()=>{
+      activeKunde=DB.kunden.find(k=>k.id===kunde.id);
+      aktiveProjekt=DB.projekte.find(p=>p.id===projekt.id);
+      if(aktiveProjekt){
+        document.getElementById('projekt-title').textContent=aktiveProjekt.name;
+        document.getElementById('projekt-back').textContent=`‹ ${activeKunde?.name||'Zurück'}`;
+        document.getElementById('projekt-menu').classList.add('hidden');
+        renderProjektContent();
+        showView('projekt');
+      }
+    },500);
+  }catch(err){
+    toast('Fehler: '+err.message);closeFreieNotiz();
   }
 }
 
