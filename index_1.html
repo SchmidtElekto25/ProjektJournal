@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ProjektJournal</title>
+<style>
+  :root {
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --blue: #007AFF;
+    --green: #34C759;
+    --orange: #FF9500;
+    --red: #FF3B30;
+    --purple: #AF52DE;
+    --yellow: #FFCC00;
+    --text1: #1C1C1E;
+    --text2: #6C6C70;
+    --text3: #AEAEB2;
+    --border: #E5E5EA;
+    --border2: #C7C7CC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: var(--bg); color: var(--text1); font-size: 16px; }
+  .hidden { display: none !important; }
+
+  /* Layout */
+  .view { display: none; min-height: 100vh; padding-bottom: 80px; }
+  .view.active { display: block; }
+  
+  /* Header */
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 20px 12px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header-sub { font-size: 17px; font-weight: 600; flex: 1; text-align: center; }
+  .back-btn { color: var(--blue); font-size: 17px; background: none; border: none; cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
+  .header-action { color: var(--blue); font-size: 17px; background: none; border: none; cursor: pointer; font-weight: 600; }
+
+  /* Bottom Nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 4px; cursor: pointer; border: none; background: none; }
+  .nav-icon { font-size: 24px; }
+  .nav-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+  .nav-item.active .nav-label { color: var(--blue); }
+  .nav-item.active .nav-icon { filter: none; }
+
+  /* Cards */
+  .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .card-list { padding: 16px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; padding: 14px 20px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; width: 100%; margin-bottom: 10px; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-ghost { background: var(--card); color: var(--blue); border: 1.5px solid var(--border2); }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .btn-row .btn { margin-bottom: 0; }
+
+  /* Input */
+  .input-group { margin-bottom: 16px; }
+  .input-label { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px; font-size: 16px; color: var(--text1); font-family: inherit; outline: none; }
+  .input:focus { border-color: var(--blue); }
+  textarea.input { min-height: 80px; resize: vertical; }
+
+  /* Status badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-geplant { background: #FFF3CD; color: #856404; }
+  .badge-aktiv { background: #D1FAE5; color: #065F46; }
+  .badge-abgeschlossen { background: #E5E7EB; color: #374151; }
+  .badge-storniert { background: #FEE2E2; color: #991B1B; }
+
+  /* Customer card */
+  .customer-card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: opacity 0.15s; }
+  .customer-card:active { opacity: 0.7; }
+  .customer-name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .customer-sub { font-size: 14px; color: var(--text2); }
+  .customer-meta { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+
+  /* Project card */
+  .project-card { background: var(--card); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: opacity 0.15s; display: flex; justify-content: space-between; align-items: center; }
+  .project-card:active { opacity: 0.7; }
+  .project-name { font-size: 16px; font-weight: 600; }
+  .project-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+  /* Dashboard tiles */
+  .dash-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
+  .dash-tile { background: var(--card); border-radius: 12px; padding: 14px; border-left: 4px solid; }
+  .dash-tile-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .dash-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .dash-item:last-child { border-bottom: none; }
+  .dash-item-text { font-size: 14px; flex: 1; }
+  .dash-del { background: none; border: none; cursor: pointer; font-size: 18px; padding: 0 4px; flex-shrink: 0; opacity: 0.5; }
+
+  /* Entry card */
+  .entry-card { background: var(--card); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .entry-date { font-size: 13px; font-weight: 600; color: var(--text2); }
+  .entry-summary { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .entry-text { font-size: 14px; color: var(--text2); }
+
+  /* Aufmass */
+  .aufmass-card { background: var(--card); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .aufmass-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .aufmass-date { font-size: 13px; color: var(--text2); font-weight: 600; }
+  .aufmass-hours { font-size: 22px; font-weight: 700; color: var(--blue); }
+  .aufmass-desc { font-size: 14px; color: var(--text2); margin-top: 4px; }
+  .material-row { font-size: 13px; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 6px; }
+
+  /* Recording */
+  .record-area { background: var(--card); border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 16px; }
+  .rec-btn { width: 80px; height: 80px; border-radius: 50%; border: none; cursor: pointer; font-size: 32px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; transition: transform 0.1s; }
+  .rec-btn:active { transform: scale(0.95); }
+  .rec-btn-idle { background: var(--blue); }
+  .rec-btn-recording { background: var(--red); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,0.4)} 50%{box-shadow:0 0 0 12px rgba(255,59,48,0)} }
+  .rec-timer { font-size: 36px; font-weight: 300; color: var(--text1); font-variant-numeric: tabular-nums; }
+  .rec-status { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  /* Section */
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 10px; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* Empty */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text2); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* Loading */
+  .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 500; gap: 16px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text2); font-size: 15px; }
+
+  /* Modal */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; }
+  .modal-inner { background: var(--card); border-radius: 20px 20px 0 0; padding: 20px; width: 100%; max-height: 90vh; overflow-y: auto; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+
+  /* Stat row */
+  .stat-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .stat-box { flex: 1; background: var(--card); border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--blue); }
+  .stat-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* Photo grid */
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 10px; }
+  .photo-thumb { aspect-ratio: 1; object-fit: cover; border-radius: 8px; cursor: pointer; width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Lade Daten…</div>
+</div>
+
+<!-- ── View: Kunden ── -->
+<div class="view active" id="view-kunden">
+  <div class="header">
+    <h1>Kunden</h1>
+    <button class="header-action" onclick="openModal('modal-neuer-kunde')">+ Neu</button>
+  </div>
+  <div class="card-list" id="kunden-list"></div>
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="showView('kunden')" id="nav-kunden">
+      <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
+    </button>
+    <button class="nav-item" onclick="showView('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')" id="nav-chat">
+      <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── View: Projekte (eines Kunden) ── -->
+<div class="view" id="view-projekte">
+  <div class="header">
+    <button class="back-btn" onclick="showView('kunden')">‹ Kunden</button>
+    <span class="header-sub" id="projekte-title"></span>
+    <button class="header-action" onclick="openNeuesProjekt()">+ Neu</button>
+  </div>
+  <div class="card-list">
+    <div id="projekte-list"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="showView('kunden')" id="nav-kunden2">
+      <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
+    </button>
+    <button class="nav-item" onclick="showView('dashboard')" id="nav-dashboard2">
+      <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')" id="nav-chat2">
+      <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── View: Projekt Detail ── -->
+<div class="view" id="view-projekt">
+  <div class="header">
+    <button class="back-btn" onclick="showView('projekte')" id="projekt-back">‹ Zurück</button>
+    <span class="header-sub" id="projekt-title"></span>
+    <button class="header-action" id="projekt-menu-btn" onclick="toggleProjektMenu()">···</button>
+  </div>
+  <div id="projekt-menu" class="hidden" style="background:var(--card);border-bottom:1px solid var(--border);padding:8px 16px;">
+    <button onclick="changeProjektStatus('geplant')" style="display:block;width:100%;text-align:left;padding:10px 0;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text1)">🟡 Geplant</button>
+    <button onclick="changeProjektStatus('aktiv')" style="display:block;width:100%;text-align:left;padding:10px 0;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text1)">🔵 Aktiv</button>
+    <button onclick="changeProjektStatus('abgeschlossen')" style="display:block;width:100%;text-align:left;padding:10px 0;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text1)">🟢 Abgeschlossen</button>
+    <button onclick="changeProjektStatus('storniert')" style="display:block;width:100%;text-align:left;padding:10px 0;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text1)">🔴 Storniert</button>
+    <div style="height:1px;background:var(--border);margin:4px 0"></div>
+    <button onclick="deleteProjekt()" style="display:block;width:100%;text-align:left;padding:10px 0;background:none;border:none;font-size:16px;cursor:pointer;color:var(--red)">🗑 Projekt löschen</button>
+  </div>
+  <div class="card-list" id="projekt-content"></div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="showView('kunden')">
+      <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
+    </button>
+    <button class="nav-item" onclick="showView('dashboard')">
+      <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')">
+      <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── View: Dashboard ── -->
+<div class="view" id="view-dashboard">
+  <div class="header"><h1>Dashboard</h1></div>
+  <div class="card-list" id="dashboard-content"></div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="showView('kunden')">
+      <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
+    </button>
+    <button class="nav-item active" onclick="showView('dashboard')">
+      <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')">
+      <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── View: Chat ── -->
+<div class="view" id="view-chat">
+  <div class="header"><h1>KI-Assistent</h1></div>
+  <div id="chat-messages" style="padding:16px;padding-bottom:80px;"></div>
+  <div style="position:fixed;bottom:70px;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;">
+    <input type="text" id="chat-input" class="input" placeholder="Frage stellen…" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="btn btn-blue" onclick="sendChat()" style="width:auto;padding:12px 18px;margin:0">Senden</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="showView('kunden')">
+      <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
+    </button>
+    <button class="nav-item" onclick="showView('dashboard')">
+      <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item active" onclick="showView('chat')">
+      <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── Modal: Neuer Kunde ── -->
+<div class="modal hidden" id="modal-neuer-kunde">
+  <div class="modal-inner">
+    <div class="modal-title">Neuer Kunde</div>
+    <div class="input-group"><div class="input-label">Name *</div><input class="input" id="k-name" placeholder="Vor- und Nachname oder Firma"></div>
+    <div class="input-group"><div class="input-label">Telefon</div><input class="input" id="k-phone" type="tel" placeholder="+49 ..."></div>
+    <div class="input-group"><div class="input-label">Adresse</div><input class="input" id="k-address" placeholder="Straße, PLZ Ort"></div>
+    <div class="input-group"><div class="input-label">Notizen</div><textarea class="input" id="k-notes" placeholder="Weitere Infos…"></textarea></div>
+    <button class="btn btn-blue" onclick="createKunde()">Kunde anlegen</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-neuer-kunde')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ── Modal: Neues Projekt ── -->
+<div class="modal hidden" id="modal-neues-projekt">
+  <div class="modal-inner">
+    <div class="modal-title">Neues Projekt</div>
+    <div class="input-group"><div class="input-label">Projektname *</div><input class="input" id="p-name" placeholder="z.B. Küche – Elektro"></div>
+    <div class="input-group"><div class="input-label">Status</div>
+      <select class="input" id="p-status">
+        <option value="geplant">🟡 Geplant</option>
+        <option value="aktiv" selected>🔵 Aktiv</option>
+        <option value="abgeschlossen">🟢 Abgeschlossen</option>
+      </select>
+    </div>
+    <div class="input-group"><div class="input-label">Beschreibung</div><textarea class="input" id="p-desc" placeholder="Was soll gemacht werden?"></textarea></div>
+    <div class="input-group"><div class="input-label">Besonderheiten / Absprachen</div><textarea class="input" id="p-notes" placeholder="Wichtige Hinweise, Kundenwünsche…"></textarea></div>
+    <button class="btn btn-blue" onclick="createProjekt()">Projekt anlegen</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-neues-projekt')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ── Modal: Notiz ── -->
+<div class="modal hidden" id="modal-notiz">
+  <div class="modal-inner">
+    <div class="modal-title">Notiz hinzufügen</div>
+    <div class="record-area" id="record-area">
+      <button class="rec-btn rec-btn-idle" id="rec-btn" onclick="toggleRecording()">🎙</button>
+      <div class="rec-timer hidden" id="rec-timer">0:00</div>
+      <div class="rec-status" id="rec-status">Aufnahme starten</div>
+    </div>
+    <div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:12px">– oder Text eingeben –</div>
+    <div class="input-group"><textarea class="input" id="notiz-text" placeholder="Notiz eintippen…" style="min-height:100px"></textarea></div>
+    <button class="btn btn-blue" onclick="saveNotiz()">Speichern & analysieren</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-notiz')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ── Modal: Aufmaß ── -->
+<div class="modal hidden" id="modal-aufmass">
+  <div class="modal-inner">
+    <div class="modal-title">Aufmaß erfassen</div>
+    <div class="input-group"><div class="input-label">Datum</div><input class="input" type="date" id="am-date"></div>
+    <div class="input-group"><div class="input-label">Stunden vor Ort</div><input class="input" type="number" id="am-hours" placeholder="z.B. 3.5" step="0.5" min="0"></div>
+    <div class="input-group"><div class="input-label">Tätigkeit</div><input class="input" id="am-desc" placeholder="Was wurde gemacht?"></div>
+    <div class="input-group">
+      <div class="input-label">Material verbaut</div>
+      <div id="am-material-list"></div>
+      <button class="btn btn-ghost" onclick="addMaterialRow()" style="margin-top:6px">+ Material hinzufügen</button>
+    </div>
+    <button class="btn btn-blue" onclick="saveAufmass()">Speichern</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-aufmass')">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const SB_URL='https://hzfqgrteijrguejmyloo.supabase.co';
+const SB_KEY='sb_publishable_RteB1NUR2Z-oEtkQyRlKEg_WASDaINK';
+const AI_URL=`${SB_URL}/functions/v1/claude`;
+
+// ── State ─────────────────────────────────────────────────────────────────
+const DB={kunden:[],projekte:[],entries:[],aufmass:[]};
+let activeKunde=null;
+let aktiveProjekt=null;
+let currentView='kunden';
+let mediaRecorder=null;
+let audioChunks=[];
+let audioMime='';
+let isRecording=false;
+let recSeconds=0;
+let recTimer=null;
+let chatHistory=[];
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+const genId=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const fmtDate=d=>{if(!d)return'';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`;};
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function showLoading(msg='Laden…'){
+  document.getElementById('loading').style.display='flex';
+  document.getElementById('loading-text').textContent=msg;
+}
+function hideLoading(){document.getElementById('loading').style.display='none';}
+
+async function sbFetch(path,opts={}){
+  const res=await fetch(`${SB_URL}/rest/v1/${path}`,{
+    ...opts,
+    headers:{
+      'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,
+      'Content-Type':'application/json',
+      'Prefer':opts.method==='POST'?'return=representation':'return=minimal',
+      ...opts.headers
+    }
+  });
+  if(!res.ok){const t=await res.text();throw new Error(`DB ${res.status}: ${t.slice(0,100)}`);}
+  const text=await res.text();
+  return text?JSON.parse(text):null;
+}
+
+// ── Load All ──────────────────────────────────────────────────────────────
+async function loadAll(){
+  showLoading('Lade Daten…');
+  try{
+    const[kunden,projekte,entries,aufmass]=await Promise.all([
+      sbFetch('customers?order=name.asc&select=*'),
+      sbFetch('projects?order=created_at.desc&select=*'),
+      sbFetch('entries?order=date.desc,id.desc&select=*'),
+      sbFetch('aufmass?order=date.desc&select=*')
+    ]);
+    DB.kunden=kunden||[];
+    DB.projekte=projekte||[];
+    DB.entries=entries||[];
+    DB.aufmass=aufmass||[];
+    renderKunden();
+    renderDashboard();
+  }catch(err){toast('Verbindungsfehler: '+err.message);}
+  hideLoading();
+}
+
+// ── Views ─────────────────────────────────────────────────────────────────
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  currentView=name;
+  if(name==='dashboard')renderDashboard();
+  if(name==='kunden')renderKunden();
+}
+
+function openModal(id){document.getElementById(id).classList.remove('hidden');}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+
+// ── Kunden ────────────────────────────────────────────────────────────────
+function renderKunden(){
+  const list=document.getElementById('kunden-list');
+  if(!DB.kunden.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">👥</div><div>Noch keine Kunden.<br>Klick oben auf "+ Neu"</div></div>';
+    return;
+  }
+  list.innerHTML=DB.kunden.map(k=>{
+    const projekte=DB.projekte.filter(p=>p.customer_id===k.id);
+    const aktiv=projekte.filter(p=>p.status==='aktiv').length;
+    return`<div class="customer-card" onclick="openKunde('${k.id}')">
+      <div class="customer-name">${esc(k.name)}</div>
+      ${k.address?`<div class="customer-sub">📍 ${esc(k.address)}</div>`:''}
+      ${k.phone?`<div class="customer-sub">📞 ${esc(k.phone)}</div>`:''}
+      <div class="customer-meta">
+        <span style="font-size:13px;color:var(--text2)">${projekte.length} Projekt${projekte.length!==1?'e':''}</span>
+        ${aktiv?`<span class="badge badge-aktiv">${aktiv} aktiv</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function createKunde(){
+  const name=document.getElementById('k-name').value.trim();
+  if(!name){toast('Bitte Name eingeben');return;}
+  const k={id:genId(),name,phone:document.getElementById('k-phone').value.trim(),address:document.getElementById('k-address').value.trim(),notes:document.getElementById('k-notes').value.trim(),created_at:new Date().toISOString()};
+  showLoading('Speichern…');
+  try{
+    await sbFetch('customers',{method:'POST',body:JSON.stringify(k)});
+    DB.kunden.push(k);DB.kunden.sort((a,b)=>a.name.localeCompare(b.name));
+    renderKunden();closeModal('modal-neuer-kunde');
+    ['k-name','k-phone','k-address','k-notes'].forEach(id=>document.getElementById(id).value='');
+    toast('Kunde angelegt ✓');
+  }catch(err){toast('Fehler: '+err.message);}
+  hideLoading();
+}
+
+function openKunde(kid){
+  activeKunde=DB.kunden.find(k=>k.id===kid);
+  if(!activeKunde)return;
+  document.getElementById('projekte-title').textContent=activeKunde.name;
+  renderProjekte();
+  showView('projekte');
+}
+
+// ── Projekte ──────────────────────────────────────────────────────────────
+function renderProjekte(){
+  const list=document.getElementById('projekte-list');
+  const projekte=DB.projekte.filter(p=>p.customer_id===activeKunde?.id);
+  if(!projekte.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🏗</div><div>Noch keine Projekte</div></div>';
+    return;
+  }
+  const statusOrder={aktiv:0,geplant:1,abgeschlossen:2,storniert:3};
+  projekte.sort((a,b)=>(statusOrder[a.status]||0)-(statusOrder[b.status]||0));
+  list.innerHTML=projekte.map(p=>`
+    <div class="project-card" onclick="openProjekt('${p.id}')">
+      <div>
+        <div class="project-name">${esc(p.name)}</div>
+        ${p.description?`<div class="project-sub">${esc(p.description.slice(0,60))}${p.description.length>60?'…':''}</div>`:''}
+      </div>
+      <span class="badge badge-${p.status}">${p.status.charAt(0).toUpperCase()+p.status.slice(1)}</span>
+    </div>`).join('');
+}
+
+function openNeuesProjekt(){
+  if(!activeKunde){toast('Bitte zuerst einen Kunden auswählen');return;}
+  openModal('modal-neues-projekt');
+}
+
+async function createProjekt(){
+  const name=document.getElementById('p-name').value.trim();
+  if(!name){toast('Bitte Projektname eingeben');return;}
+  const p={id:genId(),customer_id:activeKunde.id,name,status:document.getElementById('p-status').value,description:document.getElementById('p-desc').value.trim(),notes:document.getElementById('p-notes').value.trim(),dashboard:null,created_at:new Date().toISOString()};
+  showLoading('Speichern…');
+  try{
+    await sbFetch('projects',{method:'POST',body:JSON.stringify(p)});
+    DB.projekte.unshift(p);renderProjekte();
+    closeModal('modal-neues-projekt');
+    ['p-name','p-desc','p-notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('p-status').value='aktiv';
+    toast('Projekt angelegt ✓');
+  }catch(err){toast('Fehler: '+err.message);}
+  hideLoading();
+}
+
+function openProjekt(pid){
+  aktiveProjekt=DB.projekte.find(p=>p.id===pid);
+  if(!aktiveProjekt)return;
+  document.getElementById('projekt-title').textContent=aktiveProjekt.name;
+  document.getElementById('projekt-back').textContent=`‹ ${activeKunde?.name||'Zurück'}`;
+  document.getElementById('projekt-menu').classList.add('hidden');
+  renderProjektContent();
+  showView('projekt');
+}
+
+function toggleProjektMenu(){
+  document.getElementById('projekt-menu').classList.toggle('hidden');
+}
+
+async function changeProjektStatus(status){
+  if(!aktiveProjekt)return;
+  showLoading('Speichern…');
+  try{
+    await sbFetch(`projects?id=eq.${aktiveProjekt.id}`,{method:'PATCH',headers:{'Prefer':''},body:JSON.stringify({status})});
+    aktiveProjekt.status=status;
+    DB.projekte=DB.projekte.map(p=>p.id===aktiveProjekt.id?{...p,status}:p);
+    document.getElementById('projekt-menu').classList.add('hidden');
+    renderProjektContent();toast('Status geändert ✓');
+  }catch(err){toast('Fehler: '+err.message);}
+  hideLoading();
+}
+
+async function deleteProjekt(){
+  if(!aktiveProjekt)return;
+  if(!confirm(`Projekt "${aktiveProjekt.name}" wirklich löschen?`))return;
+  showLoading('Löschen…');
+  try{
+    await sbFetch(`projects?id=eq.${aktiveProjekt.id}`,{method:'DELETE',headers:{'Prefer':''}});
+    DB.projekte=DB.projekte.filter(p=>p.id!==aktiveProjekt.id);
+    DB.entries=DB.entries.filter(e=>e.project_id!==aktiveProjekt.id);
+    DB.aufmass=DB.aufmass.filter(a=>a.project_id!==aktiveProjekt.id);
+    aktiveProjekt=null;renderProjekte();showView('projekte');toast('Projekt gelöscht');
+  }catch(err){toast('Fehler: '+err.message);}
+  hideLoading();
+}
+
+function renderProjektContent(){
+  if(!aktiveProjekt)return;
+  const pid=aktiveProjekt.id;
+  const dash=aktiveProjekt.dashboard||{todos:[],materials:[],customerWishes:[],importantNotes:[]};
+  const entries=DB.entries.filter(e=>e.project_id===pid);
+  const aufmass=DB.aufmass.filter(a=>a.project_id===pid);
+  const totalHours=aufmass.reduce((s,a)=>s+(parseFloat(a.hours)||0),0);
+  const kunde=DB.kunden.find(k=>k.id===aktiveProjekt.customer_id);
+
+  let html=`
+    <div style="margin-bottom:16px">
+      <span class="badge badge-${aktiveProjekt.status}">${aktiveProjekt.status.charAt(0).toUpperCase()+aktiveProjekt.status.slice(1)}</span>
+      ${kunde?`<span style="font-size:14px;color:var(--text2);margin-left:8px">👤 ${esc(kunde.name)}</span>`:''}
+    </div>
+    ${aktiveProjekt.description?`<p style="color:var(--text2);font-size:14px;margin-bottom:8px">${esc(aktiveProjekt.description)}</p>`:''}
+    ${aktiveProjekt.notes?`<div class="card" style="background:#FFF9E6;border-left:3px solid var(--yellow)"><div style="font-size:13px;font-weight:700;color:#856404;margin-bottom:4px">⚠ Absprachen</div><p style="font-size:14px">${esc(aktiveProjekt.notes)}</p></div>`:''}
+    
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="openModal('modal-notiz')" style="flex:2">🎙 Sprachnotiz</button>
+      <button class="btn btn-ghost" onclick="openModal('modal-aufmass')" style="flex:1">📐 Aufmaß</button>
+    </div>
+    <button class="btn btn-ghost" onclick="document.getElementById('foto-input').click()">📸 Foto hinzufügen</button>
+    <input type="file" id="foto-input" accept="image/*" multiple style="display:none" onchange="addFotos(this.files)">`;
+
+  // Stats
+  html+=`<div class="stat-row">
+    <div class="stat-box"><div class="stat-num">${entries.length}</div><div class="stat-label">Einträge</div></div>
+    <div class="stat-box"><div class="stat-num">${totalHours.toFixed(1).replace('.0','')}</div><div class="stat-label">Stunden</div></div>
+    <div class="stat-box"><div class="stat-num">${aufmass.length}</div><div class="stat-label">Aufmaße</div></div>
+  </div>`;
+
+  // Dashboard
+  const hasDash=(dash.todos||[]).length+(dash.materials||[]).length+(dash.customerWishes||[]).length+(dash.importantNotes||[]).length;
+  if(hasDash){
+    html+=`<div class="section-title">Aktueller Stand</div><div class="dash-grid">`;
+    if((dash.todos||[]).length)html+=dashTile('☐ Offene Punkte','var(--orange)',dash.todos,'todos');
+    if((dash.materials||[]).length)html+=dashTile('📦 Material benötigt','var(--blue)',dash.materials,'materials');
+    if((dash.customerWishes||[]).length)html+=dashTile('💬 Kundenwünsche','var(--purple)',dash.customerWishes,'customerWishes');
+    if((dash.importantNotes||[]).length)html+=dashTile('⚠ Wichtige Hinweise','var(--red)',dash.importantNotes,'importantNotes');
+    html+=`</div>`;
+  }
+
+  // Aufmaß
+  if(aufmass.length){
+    html+=`<div class="section-title">Aufmaß</div>`;
+    aufmass.forEach(a=>{
+      const mats=Array.isArray(a.material)?a.material:[];
+      html+=`<div class="aufmass-card">
+        <div class="aufmass-header">
+          <span class="aufmass-date">${fmtDate(a.date)}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="aufmass-hours">${a.hours}h</span>
+            <button onclick="deleteAufmass('${a.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px">✕</button>
+          </div>
+        </div>
+        ${a.description?`<div class="aufmass-desc">${esc(a.description)}</div>`:''}
+        ${mats.map(m=>`<div class="material-row">📦 ${esc(m.menge)} ${esc(m.einheit)} – ${esc(m.bezeichnung)}</div>`).join('')}
+      </div>`;
+    });
+  }
+
+  // Bautagebuch
+  html+=`<div class="section-title">Bautagebuch (${entries.length})</div>`;
+  if(!entries.length)html+=`<div class="empty" style="padding:24px"><div>Noch keine Einträge</div></div>`;
+  entries.forEach(e=>{
+    const photos=Array.isArray(e.photos)?e.photos:[];
+    html+=`<div class="entry-card">
+      <div class="entry-header">
+        <span class="entry-date">${fmtDate(e.date)}</span>
+        <button onclick="deleteEntry('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px">✕</button>
+      </div>
+      <div class="entry-summary">${esc(e.summary)}</div>
+      ${e.full_text&&e.full_text!==e.summary?`<div class="entry-text">${esc(e.full_text)}</div>`:''}
+      ${photos.length?`<div class="photo-grid">${photos.map(p=>`<img class="photo-thumb" src="${p.data}" onclick="window.open('${p.data}')">`).join('')}</div>`:''}
+    </div>`;
+  });
+
+  document.getElementById('projekt-content').innerHTML=html;
+
+  // Set aufmass date default
+  const dateEl=document.getElementById('am-date');
+  if(dateEl&&!dateEl.value)dateEl.value=todayStr();
+}
+
+function dashTile(title,color,items,field){
+  const pid=aktiveProjekt?.id;
+  return`<div class="dash-tile" style="border-left-color:${color}">
+    <div class="dash-tile-title" style="color:${color}">${title}</div>
+    ${items.map((item,i)=>`<div class="dash-item">
+      <span class="dash-item-text">${esc(item)}</span>
+      <button class="dash-del" onclick="deleteDashItem('${field}',${i})" style="color:${color}">×</button>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function deleteDashItem(field,idx){
+  if(!aktiveProjekt)return;
+  const dash=aktiveProjekt.dashboard||{todos:[],materials:[],customerWishes:[],importantNotes:[]};
+  const newArr=[...(dash[field]||[])];
+  newArr.splice(idx,1);
+  const newDash={...dash,[field]:newArr};
+  try{
+    await sbFetch(`projects?id=eq.${aktiveProjekt.id}`,{method:'PATCH',headers:{'Prefer':''},body:JSON.stringify({dashboard:newDash})});
+    aktiveProjekt.dashboard=newDash;
+    DB.projekte=DB.projekte.map(p=>p.id===aktiveProjekt.id?{...p,dashboard:newDash}:p);
+    renderProjektContent();
+  }catch(err){toast('Fehler: '+err.message);}
+}
+
+// ── Fotos ─────────────────────────────────────────────────────────────────
+async function addFotos(files){
+  if(!aktiveProjekt||!files.length)return;
+  showLoading('Fotos werden verarbeitet…');
+  const photos=[];
+  for(const file of files){
+    const b64=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
+    photos.push({name:file.name,data:b64,date:todayStr()});
+  }
+  // Save as new entry with photos only
+  const entry={id:genId(),project_id:aktiveProjekt.id,date:todayStr(),summary:`${photos.length} Foto${photos.length>1?'s':''} hinzugefügt`,full_text:'',photos,created_at:new Date().toISOString()};
+  try{
+    await sbFetch('entries',{method:'POST',body:JSON.stringify(entry)});
+    DB.entries.unshift(entry);renderProjektContent();toast('Fotos gespeichert ✓');
+  }catch(err){toast('Fehler: '+err.message);}
+  hideLoading();
+}
+
+// ── Aufmaß ────────────────────────────────────────────────────────────────
+function addMaterialRow(){
+  const list=document.getElementById('am-material-list');
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;margin-bottom:8px;align-items:center';
+  row.innerHTML=`
+    <input class="input" placeholder="Menge" style="width:70px;flex:none" type="number" min="0" step="0.1">
+    <input class="input" placeholder="Einheit" style="width:70px;flex:none">
+    <input class="input" placeholder="Bezeichnung" style="flex:1">
+    <button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:20px;flex:none">×</button>`;
+  list.appendChild(row);
+}
+
+async function saveAufmass(){
+  if(!aktiveProjekt)return;
+  const hours=parseFloat(document.getElementById('am-hours').value)||0;
+  const desc=document.getElementById('am-desc').value.trim();
+  const date=document.getElementById('am-date').value||todayStr();
+  const matRows=document.getElementById('am-material-list').querySelectorAll('div');
+  const material=[];
+  matRows.forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    if(inputs[2]?.value.trim()){
+      material.push({menge:inputs[0]?.value||'',einheit:inputs[1]?.value||'',bezeichnung:inputs[2].value.trim()});
+    }
+  });
+  const a={id:genId(),project_id:aktiveProjekt.id,date,hours,description:desc,material,created_at:new Date().toISOString()};
+  showLoading('Speichern…');
+  try{
+    await sbFetch('aufmass',{method:'POST',body:JSON.stringify(a)});
+    DB.aufmass.unshift(a);renderProjektContent();
+    closeModal('modal-aufmass');
+    document.getElementById('am-hours').value='';
+    document.getElementById('am-desc').value='';
+    document.getElementById('am-material-list').innerHTML='';
+    toast('Aufmaß gespeichert ✓');
+  }catch(err){toast('Fehler: '+err.message);}
+  hideLoading();
+}
+
+async function deleteAufmass(aid){
+  if(!confirm('Aufmaß löschen?'))return;
+  try{
+    await sbFetch(`aufmass?id=eq.${aid}`,{method:'DELETE',headers:{'Prefer':''}});
+    DB.aufmass=DB.aufmass.filter(a=>a.id!==aid);renderProjektContent();toast('Gelöscht');
+  }catch(err){toast('Fehler: '+err.message);}
+}
+
+// ── Recording ─────────────────────────────────────────────────────────────
+async function toggleRecording(){
+  if(isRecording){stopRecording();}
+  else{await startRecording();}
+}
+
+async function startRecording(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mimes=['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg'];
+    audioMime='';
+    for(const m of mimes){if(MediaRecorder.isTypeSupported(m)){audioMime=m;break;}}
+    if(!audioMime){toast('Aufnahme nicht unterstützt');return;}
+    audioChunks=[];
+    mediaRecorder=new MediaRecorder(stream,{mimeType:audioMime});
+    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data);};
+    mediaRecorder.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(audioChunks,{type:audioMime});
+      if(blob.size<1000){toast('Aufnahme zu kurz');resetRecording();return;}
+      await transcribeAudio(blob);
+    };
+    mediaRecorder.start(250);
+    isRecording=true;recSeconds=0;
+    document.getElementById('rec-btn').className='rec-btn rec-btn-recording';
+    document.getElementById('rec-btn').textContent='⏹';
+    document.getElementById('rec-timer').classList.remove('hidden');
+    document.getElementById('rec-status').textContent='Aufnahme läuft… Stoppen zum Beenden';
+    recTimer=setInterval(()=>{
+      recSeconds++;
+      const m=Math.floor(recSeconds/60);const s=recSeconds%60;
+      document.getElementById('rec-timer').textContent=`${m}:${String(s).padStart(2,'0')}`;
+      if(recSeconds>=120)stopRecording();
+    },1000);
+  }catch(err){toast('Mikrofon-Fehler: '+err.message);}
+}
+
+function stopRecording(){
+  clearInterval(recTimer);
+  isRecording=false;
+  if(mediaRecorder&&mediaRecorder.state!=='inactive'){
+    setTimeout(()=>mediaRecorder.stop(),300);
+  }
+}
+
+function resetRecording(){
+  clearInterval(recTimer);isRecording=false;
+  document.getElementById('rec-btn').className='rec-btn rec-btn-idle';
+  document.getElementById('rec-btn').textContent='🎙';
+  document.getElementById('rec-timer').classList.add('hidden');
+  document.getElementById('rec-status').textContent='Aufnahme starten';
+}
+
+async function transcribeAudio(blob){
+  document.getElementById('rec-status').textContent='Wird transkribiert…';
+  try{
+    const b64=await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result.split(',')[1]);
+      r.onerror=rej;r.readAsDataURL(blob);
+    });
+    const mime=audioMime;
+    const response=await fetch(AI_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({whisper:true,audio:b64,mime})
+    });
+    if(!response.ok)throw new Error('Transkription fehlgeschlagen');
+    const data=await response.json();
+    const text=(data.text||'').trim();
+    if(!text){toast('Keine Sprache erkannt');resetRecording();return;}
+    document.getElementById('notiz-text').value=text;
+    resetRecording();
+    toast('Transkribiert ✓');
+  }catch(err){
+    toast('Fehler: '+err.message);resetRecording();
+  }
+}
+
+// ── Notiz speichern ───────────────────────────────────────────────────────
+async function saveNotiz(){
+  const text=document.getElementById('notiz-text').value.trim();
+  if(!text){toast('Bitte Text eingeben oder Sprachnotiz machen');return;}
+  if(!aktiveProjekt){toast('Kein Projekt ausgewählt');return;}
+  closeModal('modal-notiz');
+  showLoading('KI analysiert…');
+  try{
+    await processNotiz(text);
+  }finally{
+    hideLoading();
+    document.getElementById('notiz-text').value='';
+  }
+}
+
+async function processNotiz(inputText){
+  const pid=aktiveProjekt.id;
+  const kunde=DB.kunden.find(k=>k.id===aktiveProjekt.customer_id);
+  const curDash=aktiveProjekt.dashboard||{todos:[],materials:[],customerWishes:[],importantNotes:[]};
+  const recentEntries=DB.entries.filter(e=>e.project_id===pid).slice(0,5).map(e=>`[${e.date}] ${e.summary}`).join('\n');
+
+  const dashContext=`Aktuell offene Punkte auf dem Dashboard:
+Todos: ${(curDash.todos||[]).join(' | ')||'(keine)'}
+Material benötigt: ${(curDash.materials||[]).join(' | ')||'(keine)'}
+Kundenwünsche: ${(curDash.customerWishes||[]).join(' | ')||'(keine)'}
+Wichtige Hinweise: ${(curDash.importantNotes||[]).join(' | ')||'(keine)'}`;
+
+  const systemPrompt=`Du bist der Assistent eines selbstständigen Elektrikers (Schmidt Elektrotechnik). Strukturiere seine Notiz und aktualisiere das Projekt-Dashboard.
+
+${dashContext}
+
+WICHTIG: Wenn die neue Notiz sagt dass etwas erledigt/gekauft/eingebaut/abgeschlossen wurde, entferne den entsprechenden Punkt aus dem Dashboard. Neue offene Punkte hinzufügen. Das Dashboard zeigt nur was AKTUELL noch offen ist.
+
+Antworte NUR mit diesem JSON (kein Markdown, keine Erklärung):
+{"summary":"1-2 Sätze was in dieser Notiz passiert ist","fullText":"vollständiger Text","dashboard":{"todos":["aktuelle offene Todos"],"materials":["aktuell benötigtes Material"],"customerWishes":["aktuelle Kundenwünsche"],"importantNotes":["aktuelle wichtige Hinweise"]}}
+
+Projekt: ${aktiveProjekt.name} | Kunde: ${kunde?.name||''} | Status: ${aktiveProjekt.status}
+Letzte Einträge:\n${recentEntries}`;
+
+  const res=await fetch(AI_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:systemPrompt,messages:[{role:'user',content:inputText}]})
+  });
+  if(!res.ok)throw new Error('KI-Fehler '+res.status);
+  const data=await res.json();
+  const raw=data.content?.[0]?.text||'';
+  let structured;
+  try{
+    const clean=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    const s=clean.indexOf('{');const e=clean.lastIndexOf('}');
+    structured=JSON.parse(clean.slice(s,e+1));
+  }catch{structured={summary:inputText.slice(0,120),fullText:inputText,dashboard:curDash};}
+
+  const newDash={
+    todos:Array.isArray(structured.dashboard?.todos)?structured.dashboard.todos:curDash.todos||[],
+    materials:Array.isArray(structured.dashboard?.materials)?structured.dashboard.materials:curDash.materials||[],
+    customerWishes:Array.isArray(structured.dashboard?.customerWishes)?structured.dashboard.customerWishes:curDash.customerWishes||[],
+    importantNotes:Array.isArray(structured.dashboard?.importantNotes)?structured.dashboard.importantNotes:curDash.importantNotes||[]
+  };
+
+  const entry={id:genId(),project_id:pid,date:todayStr(),summary:structured.summary||inputText.slice(0,120),full_text:structured.fullText||inputText,photos:[],created_at:new Date().toISOString()};
+
+  await sbFetch('entries',{method:'POST',body:JSON.stringify(entry)});
+  await sbFetch(`projects?id=eq.${pid}`,{method:'PATCH',headers:{'Prefer':''},body:JSON.stringify({dashboard:newDash})});
+
+  DB.entries.unshift(entry);
+  aktiveProjekt.dashboard=newDash;
+  DB.projekte=DB.projekte.map(p=>p.id===pid?{...p,dashboard:newDash}:p);
+  renderProjektContent();
+  toast('Notiz gespeichert ✓');
+}
+
+async function deleteEntry(eid){
+  if(!confirm('Eintrag löschen?'))return;
+  try{
+    await sbFetch(`entries?id=eq.${eid}`,{method:'DELETE',headers:{'Prefer':''}});
+    DB.entries=DB.entries.filter(e=>e.id!==eid);renderProjektContent();toast('Gelöscht');
+  }catch(err){toast('Fehler: '+err.message);}
+}
+
+// ── Dashboard (Gesamtübersicht) ───────────────────────────────────────────
+function renderDashboard(){
+  const content=document.getElementById('dashboard-content');
+  const aktiv=DB.projekte.filter(p=>p.status==='aktiv');
+  const geplant=DB.projekte.filter(p=>p.status==='geplant');
+
+  let allTodos=[],allMaterials=[];
+  DB.projekte.forEach(p=>{
+    const dash=p.dashboard||{};
+    const k=DB.kunden.find(c=>c.id===p.customer_id);
+    const prefix=`${k?.name||'?'} – ${p.name}`;
+    (dash.todos||[]).forEach(t=>allTodos.push({text:t,projekt:prefix}));
+    (dash.materials||[]).forEach(m=>allMaterials.push({text:m,projekt:prefix}));
+  });
+
+  let html=`<div class="stat-row">
+    <div class="stat-box"><div class="stat-num">${aktiv.length}</div><div class="stat-label">Aktiv</div></div>
+    <div class="stat-box"><div class="stat-num">${geplant.length}</div><div class="stat-label">Geplant</div></div>
+    <div class="stat-box"><div class="stat-num">${DB.projekte.filter(p=>p.status==='abgeschlossen').length}</div><div class="stat-label">Abgeschlossen</div></div>
+  </div>`;
+
+  if(allTodos.length){
+    html+=`<div class="section-title">☐ Offene Todos (gesamt)</div>`;
+    allTodos.forEach(t=>html+=`<div class="card" style="padding:12px 14px;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:500">${esc(t.text)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">${esc(t.projekt)}</div>
+    </div>`);
+  }
+
+  if(allMaterials.length){
+    html+=`<div class="section-title">📦 Material benötigt (gesamt)</div>`;
+    allMaterials.forEach(m=>html+=`<div class="card" style="padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--blue)">
+      <div style="font-size:14px;font-weight:500">${esc(m.text)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">${esc(m.projekt)}</div>
+    </div>`);
+  }
+
+  if(!allTodos.length&&!allMaterials.length){
+    html+=`<div class="empty"><div class="empty-icon">✅</div><div>Alles erledigt – keine offenen Punkte</div></div>`;
+  }
+
+  if(aktiv.length){
+    html+=`<div class="section-title">Aktive Projekte</div>`;
+    aktiv.forEach(p=>{
+      const k=DB.kunden.find(c=>c.id===p.customer_id);
+      html+=`<div class="project-card" onclick="openProjektFromDash('${p.id}')">
+        <div><div class="project-name">${esc(p.name)}</div>${k?`<div class="project-sub">👤 ${esc(k.name)}</div>`:''}</div>
+        <span style="color:var(--text3)">›</span>
+      </div>`;
+    });
+  }
+
+  content.innerHTML=html;
+}
+
+function openProjektFromDash(pid){
+  const p=DB.projekte.find(x=>x.id===pid);
+  if(!p)return;
+  activeKunde=DB.kunden.find(k=>k.id===p.customer_id);
+  aktiveProjekt=p;
+  document.getElementById('projekt-title').textContent=p.name;
+  document.getElementById('projekt-back').textContent=`‹ ${activeKunde?.name||'Zurück'}`;
+  document.getElementById('projekt-menu').classList.add('hidden');
+  renderProjektContent();
+  showView('projekt');
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  chatHistory.push({role:'user',text:msg});
+  renderChat();
+
+  const ctx=DB.projekte.map(p=>{
+    const k=DB.kunden.find(c=>c.id===p.customer_id);
+    const dash=p.dashboard||{};
+    const ents=DB.entries.filter(e=>e.project_id===p.id).slice(0,10).map(e=>`  [${e.date}] ${e.summary}`).join('\n');
+    const aufm=DB.aufmass.filter(a=>a.project_id===p.id);
+    const h=aufm.reduce((s,a)=>s+(parseFloat(a.hours)||0),0);
+    return`PROJEKT: ${p.name} | Kunde: ${k?.name||'?'} | Status: ${p.status} | Stunden gesamt: ${h}h
+Offene Todos: ${(dash.todos||[]).join(', ')||'–'}
+Material benötigt: ${(dash.materials||[]).join(', ')||'–'}
+Bautagebuch:\n${ents||'  (leer)'}`;
+  }).join('\n\n');
+
+  try{
+    const res=await fetch(AI_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',max_tokens:1000,
+        system:`Du bist der persönliche Assistent von Jonas Schmidt, selbstständiger Elektriker (Schmidt Elektrotechnik). Du kennst alle seine Projekte und Kunden:\n\n${ctx}\n\nAntworte auf Deutsch, kurz und direkt.`,
+        messages:chatHistory.map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}))
+      })
+    });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Fehler';
+    chatHistory.push({role:'assistant',text:reply});
+  }catch{chatHistory.push({role:'assistant',text:'Verbindungsfehler'});}
+  renderChat();
+}
+
+function renderChat(){
+  const msgs=document.getElementById('chat-messages');
+  if(!chatHistory.length){
+    msgs.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div>Frag mich zu deinen Projekten.<br>z.B. „Was muss ich noch kaufen?" oder „Wie viele Stunden beim Projekt Müller?"</div></div>';
+    return;
+  }
+  msgs.innerHTML=chatHistory.map(m=>`
+    <div style="display:flex;justify-content:${m.role==='user'?'flex-end':'flex-start'};margin-bottom:10px">
+      <div style="max-width:85%;background:${m.role==='user'?'var(--blue)':'var(--card)'};color:${m.role==='user'?'#fff':'var(--text1)'};border-radius:18px;padding:12px 16px;font-size:15px;line-height:1.4">
+        ${esc(m.text)}
+      </div>
+    </div>`).join('');
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
