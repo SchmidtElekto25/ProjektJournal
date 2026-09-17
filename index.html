@@ -186,13 +186,16 @@
   </div>
   <div class="card-list" id="kunden-list"></div>
   <div class="bottom-nav">
-    <button class="nav-item active" onclick="showView('kunden')" id="nav-kunden">
+    <button class="nav-item active" onclick="showView('kunden')">
       <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
     </button>
-    <button class="nav-item" onclick="showView('dashboard')" id="nav-dashboard">
+    <button class="nav-item" onclick="showView('dashboard')">
       <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
     </button>
-    <button class="nav-item" onclick="showView('chat')" id="nav-chat">
+    <button class="nav-item" onclick="showView('bestand')">
+      <span class="nav-icon">📦</span><span class="nav-label">Bestand</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')">
       <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
     </button>
   </div>
@@ -209,13 +212,16 @@
     <div id="projekte-list"></div>
   </div>
   <div class="bottom-nav">
-    <button class="nav-item" onclick="showView('kunden')" id="nav-kunden2">
+    <button class="nav-item" onclick="showView('kunden')">
       <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
     </button>
-    <button class="nav-item" onclick="showView('dashboard')" id="nav-dashboard2">
+    <button class="nav-item" onclick="showView('dashboard')">
       <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
     </button>
-    <button class="nav-item" onclick="showView('chat')" id="nav-chat2">
+    <button class="nav-item" onclick="showView('bestand')">
+      <span class="nav-icon">📦</span><span class="nav-label">Bestand</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')">
       <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
     </button>
   </div>
@@ -244,6 +250,9 @@
     <button class="nav-item" onclick="showView('dashboard')">
       <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
     </button>
+    <button class="nav-item" onclick="showView('bestand')">
+      <span class="nav-icon">📦</span><span class="nav-label">Bestand</span>
+    </button>
     <button class="nav-item" onclick="showView('chat')">
       <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
     </button>
@@ -260,6 +269,9 @@
     </button>
     <button class="nav-item active" onclick="showView('dashboard')">
       <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showView('bestand')">
+      <span class="nav-icon">📦</span><span class="nav-label">Bestand</span>
     </button>
     <button class="nav-item" onclick="showView('chat')">
       <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
@@ -282,12 +294,104 @@
     <button class="nav-item" onclick="showView('dashboard')">
       <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
     </button>
+    <button class="nav-item" onclick="showView('bestand')">
+      <span class="nav-icon">📦</span><span class="nav-label">Bestand</span>
+    </button>
     <button class="nav-item active" onclick="showView('chat')">
       <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
     </button>
   </div>
 </div>
 
+
+<!-- ── View: Bestand ── -->
+<div class="view" id="view-bestand">
+  <div class="header">
+    <h1>Bestand</h1>
+    <button class="header-action" onclick="openModal('modal-neuer-artikel')">+ Neu</button>
+  </div>
+  <!-- Ort Tabs -->
+  <div style="display:flex;background:var(--card);border-bottom:1px solid var(--border)">
+    <button id="tab-lager" onclick="switchBestandTab('lager')" style="flex:1;padding:12px;border:none;background:none;font-size:15px;font-weight:600;color:#D94F1E;border-bottom:2px solid #D94F1E;cursor:pointer">🏠 Lager</button>
+    <button id="tab-auto" onclick="switchBestandTab('auto')" style="flex:1;padding:12px;border:none;background:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer">🚐 Auto</button>
+  </div>
+  <div class="card-list" id="bestand-list"></div>
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="showView('kunden')">
+      <span class="nav-icon">👥</span><span class="nav-label">Kunden</span>
+    </button>
+    <button class="nav-item" onclick="showView('dashboard')">
+      <span class="nav-icon">📋</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item active" onclick="showView('bestand')">
+      <span class="nav-icon">📦</span><span class="nav-label">Bestand</span>
+    </button>
+    <button class="nav-item" onclick="showView('chat')">
+      <span class="nav-icon">💬</span><span class="nav-label">Assistent</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── Modal: Neuer Artikel ── -->
+<div class="modal hidden" id="modal-neuer-artikel">
+  <div class="modal-inner">
+    <div class="modal-title">Neuer Artikel</div>
+    <div class="input-group">
+      <div class="input-label">Ort</div>
+      <select class="input" id="art-ort">
+        <option value="lager">🏠 Lager</option>
+        <option value="auto">🚐 Auto</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <div class="input-label">Kategorie</div>
+      <select class="input" id="art-kategorie">
+        <option>Kabel & Leitungen</option>
+        <option>Verteilermaterial</option>
+        <option>Schalter & Steckgeräte</option>
+        <option>Verlegematerial</option>
+        <option>Befestigungsmaterial</option>
+        <option>Werkzeug & Maschinen</option>
+        <option>Baustellenzubehör</option>
+        <option>Beleuchtung</option>
+        <option>Sonstiges</option>
+      </select>
+    </div>
+    <div class="input-group"><div class="input-label">Name *</div><input class="input" id="art-name" placeholder="z.B. NYM-J 3x1,5mm²"></div>
+    <div style="display:flex;gap:10px">
+      <div class="input-group" style="flex:1"><div class="input-label">Menge</div><input class="input" type="number" id="art-menge" value="1" min="0" step="0.1"></div>
+      <div class="input-group" style="flex:1"><div class="input-label">Einheit</div>
+        <select class="input" id="art-einheit">
+          <option>Stk</option><option>m</option><option>Rolle</option><option>Pkg</option><option>kg</option><option>l</option>
+        </select>
+      </div>
+    </div>
+    <div class="input-group"><div class="input-label">Notiz</div><input class="input" id="art-notiz" placeholder="Optional"></div>
+    <button class="btn btn-blue" onclick="createArtikel()">Speichern</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-neuer-artikel')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ── Modal: Artikel bearbeiten ── -->
+<div class="modal hidden" id="modal-edit-artikel">
+  <div class="modal-inner">
+    <div class="modal-title" id="edit-artikel-title">Menge ändern</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:14px;color:var(--text2);margin-bottom:12px" id="edit-artikel-name"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px">
+        <button onclick="changeArtikelMenge(-1)" style="width:48px;height:48px;border-radius:50%;background:#FDE8DF;border:none;font-size:24px;cursor:pointer;color:#D94F1E">−</button>
+        <div style="text-align:center">
+          <input type="number" id="edit-menge" style="font-size:32px;font-weight:700;width:100px;text-align:center;border:none;background:none;color:var(--text1)" step="0.1" min="0">
+          <div id="edit-einheit" style="font-size:14px;color:var(--text2)"></div>
+        </div>
+        <button onclick="changeArtikelMenge(1)" style="width:48px;height:48px;border-radius:50%;background:#D94F1E;border:none;font-size:24px;cursor:pointer;color:white">+</button>
+      </div>
+    </div>
+    <button class="btn btn-blue" onclick="saveArtikelMenge()">Speichern</button>
+    <button class="btn btn-ghost" style="color:var(--red)" onclick="deleteArtikel()">Artikel löschen</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-edit-artikel')">Abbrechen</button>
+  </div>
+</div>
 <!-- ── Modal: Neuer Kunde ── -->
 <div class="modal hidden" id="modal-neuer-kunde">
   <div class="modal-inner">
@@ -396,7 +500,7 @@ const SB_KEY='sb_publishable_RteB1NUR2Z-oEtkQyRlKEg_WASDaINK';
 const AI_URL=`${SB_URL}/functions/v1/claude`;
 
 // ── State ─────────────────────────────────────────────────────────────────
-const DB={kunden:[],projekte:[],entries:[],aufmass:[]};
+const DB={kunden:[],projekte:[],entries:[],aufmass:[],bestand:[]};
 let activeKunde=null;
 let aktiveProjekt=null;
 let currentView='kunden';
@@ -445,16 +549,18 @@ async function sbFetch(path,opts={}){
 async function loadAll(){
   showLoading('Lade Daten…');
   try{
-    const[kunden,projekte,entries,aufmass]=await Promise.all([
+    const[kunden,projekte,entries,aufmass,bestand]=await Promise.all([
       sbFetch('customers?order=name.asc&select=*'),
       sbFetch('projects?order=created_at.desc&select=*'),
       sbFetch('entries?order=date.desc,id.desc&select=*'),
-      sbFetch('aufmass?order=date.desc&select=*')
+      sbFetch('aufmass?order=date.desc&select=*'),
+      sbFetch('bestand?order=kategorie.asc,name.asc&select=*')
     ]);
     DB.kunden=kunden||[];
     DB.projekte=projekte||[];
     DB.entries=entries||[];
     DB.aufmass=aufmass||[];
+    DB.bestand=bestand||[];
     renderKunden();
     renderDashboard();
   }catch(err){toast('Verbindungsfehler: '+err.message);}
@@ -468,6 +574,7 @@ function showView(name){
   currentView=name;
   if(name==='dashboard')renderDashboard();
   if(name==='kunden')renderKunden();
+  if(name==='bestand')renderBestand();
 }
 
 function openModal(id){document.getElementById(id).classList.remove('hidden');}
@@ -1249,6 +1356,149 @@ function renderChat(){
       </div>
     </div>`).join('');
   msgs.scrollTop=msgs.scrollHeight;
+}
+
+
+// ── Bestand ───────────────────────────────────────────────────────────────
+let aktuellerBestandOrt = 'lager';
+let editArtikelId = null;
+
+function switchBestandTab(ort) {
+  aktuellerBestandOrt = ort;
+  document.getElementById('tab-lager').style.cssText = ort==='lager'
+    ? 'flex:1;padding:12px;border:none;background:none;font-size:15px;font-weight:600;color:#D94F1E;border-bottom:2px solid #D94F1E;cursor:pointer'
+    : 'flex:1;padding:12px;border:none;background:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer';
+  document.getElementById('tab-auto').style.cssText = ort==='auto'
+    ? 'flex:1;padding:12px;border:none;background:none;font-size:15px;font-weight:600;color:#D94F1E;border-bottom:2px solid #D94F1E;cursor:pointer'
+    : 'flex:1;padding:12px;border:none;background:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer';
+  renderBestand();
+}
+
+function renderBestand() {
+  const list = document.getElementById('bestand-list');
+  if(!list) return;
+  const items = DB.bestand.filter(a => a.ort === aktuellerBestandOrt);
+  if(!items.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div>Noch keine Artikel.<br>Klick oben auf "+ Neu"</div></div>';
+    return;
+  }
+  // Group by kategorie
+  const cats = {};
+  items.forEach(a => { if(!cats[a.kategorie]) cats[a.kategorie] = []; cats[a.kategorie].push(a); });
+  const catOrder = ['Kabel & Leitungen','Verteilermaterial','Schalter & Steckgeräte','Verlegematerial','Befestigungsmaterial','Werkzeug & Maschinen','Baustellenzubehör','Beleuchtung','Sonstiges'];
+  let html = '';
+  catOrder.forEach(cat => {
+    if(!cats[cat]) return;
+    html += `<div class="section-title">${cat}</div>`;
+    cats[cat].forEach(a => {
+      const low = a.menge <= 2;
+      html += `<div class="card" style="padding:12px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="openEditArtikel('${a.id}')">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.name)}</div>
+          ${a.notiz ? `<div style="font-size:12px;color:var(--text2)">${esc(a.notiz)}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:12px">
+          <button onclick="event.stopPropagation();quickChange('${a.id}',-1)" style="width:32px;height:32px;border-radius:50%;background:#F2F2F7;border:none;font-size:18px;cursor:pointer">−</button>
+          <div style="text-align:center;min-width:50px">
+            <div style="font-size:18px;font-weight:700;color:${low?'var(--red)':'var(--text1)'}">${a.menge}</div>
+            <div style="font-size:11px;color:var(--text2)">${a.einheit}</div>
+          </div>
+          <button onclick="event.stopPropagation();quickChange('${a.id}',1)" style="width:32px;height:32px;border-radius:50%;background:#D94F1E;border:none;font-size:18px;cursor:pointer;color:white">+</button>
+        </div>
+      </div>`;
+    });
+  });
+  // Any uncategorized
+  Object.keys(cats).forEach(cat => {
+    if(!catOrder.includes(cat)) {
+      html += `<div class="section-title">${cat}</div>`;
+      cats[cat].forEach(a => { html += `<div class="card" style="padding:12px 16px;margin-bottom:8px;cursor:pointer" onclick="openEditArtikel('${a.id}')">${esc(a.name)} – ${a.menge} ${a.einheit}</div>`; });
+    }
+  });
+  list.innerHTML = html;
+}
+
+async function quickChange(id, delta) {
+  const a = DB.bestand.find(x => x.id === id);
+  if(!a) return;
+  const newMenge = Math.max(0, (parseFloat(a.menge)||0) + delta);
+  try {
+    await sbFetch(`bestand?id=eq.${id}`, {method:'PATCH', headers:{'Prefer':''}, body:JSON.stringify({menge:newMenge})});
+    a.menge = newMenge;
+    renderBestand();
+  } catch(err) { toast('Fehler: '+err.message); }
+}
+
+function openEditArtikel(id) {
+  const a = DB.bestand.find(x => x.id === id);
+  if(!a) return;
+  editArtikelId = id;
+  document.getElementById('edit-artikel-title').textContent = a.name;
+  document.getElementById('edit-artikel-name').textContent = a.kategorie + ' · ' + (a.ort==='lager'?'🏠 Lager':'🚐 Auto');
+  document.getElementById('edit-menge').value = a.menge;
+  document.getElementById('edit-einheit').textContent = a.einheit;
+  openModal('modal-edit-artikel');
+}
+
+function changeArtikelMenge(delta) {
+  const input = document.getElementById('edit-menge');
+  const val = Math.max(0, (parseFloat(input.value)||0) + delta);
+  input.value = val;
+}
+
+async function saveArtikelMenge() {
+  if(!editArtikelId) return;
+  const newMenge = parseFloat(document.getElementById('edit-menge').value)||0;
+  try {
+    await sbFetch(`bestand?id=eq.${editArtikelId}`, {method:'PATCH', headers:{'Prefer':''}, body:JSON.stringify({menge:newMenge})});
+    const a = DB.bestand.find(x => x.id === editArtikelId);
+    if(a) a.menge = newMenge;
+    closeModal('modal-edit-artikel');
+    renderBestand();
+    toast('Gespeichert ✓');
+  } catch(err) { toast('Fehler: '+err.message); }
+}
+
+async function deleteArtikel() {
+  if(!editArtikelId || !confirm('Artikel löschen?')) return;
+  try {
+    await sbFetch(`bestand?id=eq.${editArtikelId}`, {method:'DELETE', headers:{'Prefer':''}});
+    DB.bestand = DB.bestand.filter(x => x.id !== editArtikelId);
+    closeModal('modal-edit-artikel');
+    renderBestand();
+    toast('Gelöscht');
+  } catch(err) { toast('Fehler: '+err.message); }
+}
+
+async function createArtikel() {
+  const name = document.getElementById('art-name').value.trim();
+  if(!name) { toast('Bitte Name eingeben'); return; }
+  const a = {
+    id: genId(),
+    ort: document.getElementById('art-ort').value,
+    kategorie: document.getElementById('art-kategorie').value,
+    name,
+    menge: parseFloat(document.getElementById('art-menge').value)||0,
+    einheit: document.getElementById('art-einheit').value,
+    notiz: document.getElementById('art-notiz').value.trim(),
+    created_at: new Date().toISOString()
+  };
+  showLoading('Speichern…');
+  try {
+    await sbFetch('bestand', {method:'POST', body:JSON.stringify(a)});
+    DB.bestand.push(a);
+    closeModal('modal-neuer-artikel');
+    ['art-name','art-notiz'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('art-menge').value='1';
+    renderBestand();
+    toast('Artikel gespeichert ✓');
+  } catch(err) { toast('Fehler: '+err.message); }
+  hideLoading();
+}
+
+async function loadBestand() {
+  const b = await sbFetch('bestand?order=kategorie.asc,name.asc&select=*');
+  DB.bestand = b || [];
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
