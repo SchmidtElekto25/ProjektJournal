@@ -345,7 +345,7 @@
     </div>
     <div class="input-group">
       <div class="input-label">Kategorie</div>
-      <select class="input" id="art-kategorie">
+      <select class="input" id="art-kategorie" onchange="checkNeueKategorieNeu()">
         <option>Kabel & Leitungen</option>
         <option>Verteilermaterial</option>
         <option>Schalter & Steckgeräte</option>
@@ -355,7 +355,9 @@
         <option>Baustellenzubehör</option>
         <option>Beleuchtung</option>
         <option>Sonstiges</option>
+        <option value="__neu__">+ Neue Kategorie…</option>
       </select>
+      <input class="input hidden" id="art-kategorie-neu" placeholder="Neue Kategorie eingeben…" style="margin-top:8px">
     </div>
     <div class="input-group"><div class="input-label">Name *</div><input class="input" id="art-name" placeholder="z.B. NYM-J 3x1,5mm²"></div>
     <div style="display:flex;gap:10px">
@@ -375,19 +377,56 @@
 <!-- ── Modal: Artikel bearbeiten ── -->
 <div class="modal hidden" id="modal-edit-artikel">
   <div class="modal-inner">
-    <div class="modal-title" id="edit-artikel-title">Menge ändern</div>
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:14px;color:var(--text2);margin-bottom:12px" id="edit-artikel-name"></div>
+    <div class="modal-title">Artikel bearbeiten</div>
+    <!-- Menge schnell ändern -->
+    <div style="text-align:center;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:center;gap:16px">
         <button onclick="changeArtikelMenge(-1)" style="width:48px;height:48px;border-radius:50%;background:#FDE8DF;border:none;font-size:24px;cursor:pointer;color:#D94F1E">−</button>
         <div style="text-align:center">
-          <input type="number" id="edit-menge" style="font-size:32px;font-weight:700;width:100px;text-align:center;border:none;background:none;color:var(--text1)" step="0.1" min="0">
-          <div id="edit-einheit" style="font-size:14px;color:var(--text2)"></div>
+          <input type="number" id="edit-menge" style="font-size:32px;font-weight:700;width:100px;text-align:center;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text1)" step="0.1" min="0">
+          <div id="edit-einheit" style="font-size:14px;color:var(--text2);margin-top:4px"></div>
         </div>
         <button onclick="changeArtikelMenge(1)" style="width:48px;height:48px;border-radius:50%;background:#D94F1E;border:none;font-size:24px;cursor:pointer;color:white">+</button>
       </div>
     </div>
-    <button class="btn btn-blue" onclick="saveArtikelMenge()">Speichern</button>
+    <div class="divider"></div>
+    <!-- Name bearbeiten -->
+    <div class="input-group">
+      <div class="input-label">Name</div>
+      <input class="input" id="edit-name" placeholder="Artikelname">
+    </div>
+    <!-- Kategorie -->
+    <div class="input-group">
+      <div class="input-label">Kategorie</div>
+      <div style="display:flex;gap:8px">
+        <select class="input" id="edit-kategorie" style="flex:1" onchange="checkNeueKategorie()">
+          <option>Kabel & Leitungen</option>
+          <option>Verteilermaterial</option>
+          <option>Schalter & Steckgeräte</option>
+          <option>Verlegematerial</option>
+          <option>Befestigungsmaterial</option>
+          <option>Werkzeug & Maschinen</option>
+          <option>Baustellenzubehör</option>
+          <option>Beleuchtung</option>
+          <option>Sonstiges</option>
+          <option value="__neu__">+ Neue Kategorie…</option>
+        </select>
+      </div>
+      <input class="input hidden" id="edit-kategorie-neu" placeholder="Neue Kategorie eingeben…" style="margin-top:8px">
+    </div>
+    <!-- Einheit -->
+    <div class="input-group">
+      <div class="input-label">Einheit</div>
+      <select class="input" id="edit-einheit-select">
+        <option>Stk</option><option>m</option><option>Rolle</option><option>Pkg</option><option>kg</option><option>l</option>
+      </select>
+    </div>
+    <!-- Notiz -->
+    <div class="input-group">
+      <div class="input-label">Notiz</div>
+      <input class="input" id="edit-notiz" placeholder="Optional">
+    </div>
+    <button class="btn btn-blue" onclick="saveArtikelFull()">Speichern</button>
     <button class="btn btn-ghost" style="color:var(--red)" onclick="deleteArtikel()">Artikel löschen</button>
     <button class="btn btn-ghost" onclick="closeModal('modal-edit-artikel')">Abbrechen</button>
   </div>
@@ -1433,10 +1472,25 @@ function openEditArtikel(id) {
   const a = DB.bestand.find(x => x.id === id);
   if(!a) return;
   editArtikelId = id;
-  document.getElementById('edit-artikel-title').textContent = a.name;
-  document.getElementById('edit-artikel-name').textContent = a.kategorie + ' · ' + (a.ort==='lager'?'🏠 Lager':'🚐 Auto');
   document.getElementById('edit-menge').value = a.menge;
   document.getElementById('edit-einheit').textContent = a.einheit;
+  document.getElementById('edit-name').value = a.name;
+  document.getElementById('edit-notiz').value = a.notiz||'';
+  // Set kategorie
+  const sel = document.getElementById('edit-kategorie');
+  let found = false;
+  for(let opt of sel.options) { if(opt.value===a.kategorie||opt.text===a.kategorie){sel.value=opt.value;found=true;break;} }
+  if(!found) {
+    // Add custom option
+    const opt = document.createElement('option');
+    opt.value = a.kategorie; opt.text = a.kategorie;
+    sel.insertBefore(opt, sel.options[sel.options.length-1]);
+    sel.value = a.kategorie;
+  }
+  document.getElementById('edit-kategorie-neu').classList.add('hidden');
+  // Set einheit
+  const einSel = document.getElementById('edit-einheit-select');
+  for(let opt of einSel.options) { if(opt.value===a.einheit){einSel.value=a.einheit;break;} }
   openModal('modal-edit-artikel');
 }
 
@@ -1446,13 +1500,38 @@ function changeArtikelMenge(delta) {
   input.value = val;
 }
 
-async function saveArtikelMenge() {
+function checkNeueKategorie() {
+  const sel = document.getElementById('edit-kategorie');
+  const neu = document.getElementById('edit-kategorie-neu');
+  if(sel.value === '__neu__') { neu.classList.remove('hidden'); neu.focus(); }
+  else { neu.classList.add('hidden'); }
+}
+
+function checkNeueKategorieNeu() {
+  const sel = document.getElementById('art-kategorie');
+  const neu = document.getElementById('art-kategorie-neu');
+  if(sel.value === '__neu__') { neu.classList.remove('hidden'); neu.focus(); }
+  else { neu.classList.add('hidden'); }
+}
+
+async function saveArtikelFull() {
   if(!editArtikelId) return;
-  const newMenge = parseFloat(document.getElementById('edit-menge').value)||0;
+  const a = DB.bestand.find(x => x.id === editArtikelId);
+  if(!a) return;
+  const name = document.getElementById('edit-name').value.trim();
+  if(!name) { toast('Bitte Name eingeben'); return; }
+  const katSel = document.getElementById('edit-kategorie');
+  let kat = katSel.value === '__neu__'
+    ? document.getElementById('edit-kategorie-neu').value.trim()
+    : katSel.value;
+  if(!kat) { toast('Bitte Kategorie eingeben'); return; }
+  const menge = parseFloat(document.getElementById('edit-menge').value)||0;
+  const einheit = document.getElementById('edit-einheit-select').value;
+  const notiz = document.getElementById('edit-notiz').value.trim();
+  const updates = {name, kategorie:kat, menge, einheit, notiz};
   try {
-    await sbFetch(`bestand?id=eq.${editArtikelId}`, {method:'PATCH', headers:{'Prefer':''}, body:JSON.stringify({menge:newMenge})});
-    const a = DB.bestand.find(x => x.id === editArtikelId);
-    if(a) a.menge = newMenge;
+    await sbFetch(`bestand?id=eq.${editArtikelId}`, {method:'PATCH', headers:{'Prefer':''}, body:JSON.stringify(updates)});
+    Object.assign(a, updates);
     closeModal('modal-edit-artikel');
     renderBestand();
     toast('Gespeichert ✓');
@@ -1473,10 +1552,15 @@ async function deleteArtikel() {
 async function createArtikel() {
   const name = document.getElementById('art-name').value.trim();
   if(!name) { toast('Bitte Name eingeben'); return; }
+  const katSel = document.getElementById('art-kategorie');
+  const kat = katSel.value === '__neu__'
+    ? document.getElementById('art-kategorie-neu').value.trim()
+    : katSel.value;
+  if(!kat) { toast('Bitte Kategorie eingeben'); return; }
   const a = {
     id: genId(),
     ort: document.getElementById('art-ort').value,
-    kategorie: document.getElementById('art-kategorie').value,
+    kategorie: kat,
     name,
     menge: parseFloat(document.getElementById('art-menge').value)||0,
     einheit: document.getElementById('art-einheit').value,
